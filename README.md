@@ -473,7 +473,7 @@ The project aligns strongly with industry-oriented AI/ML internship objectives a
 # 👨‍💻 Author
 
 ## Supratik Mitra  
-B.Tech CSE (AI & ML)
+B.Tech CSE 
 
 ---
 
