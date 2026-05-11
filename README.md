@@ -428,7 +428,7 @@ The system aligns strongly with industry-oriented AI/ML internship objectives.
 # 👨‍💻 Author
 
 ## Supratik Mitra
-B.Tech CSE (AI & ML)
+B.Tech CSE 
 
 ---
 
