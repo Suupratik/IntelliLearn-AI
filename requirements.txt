@@ -19,6 +19,4 @@ seaborn
 
 scikit-learn
 
-tensorflow
-
 pymongo
