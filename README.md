@@ -32,18 +32,16 @@ The system transforms static study materials into an interactive AI-assisted edu
 
 IntelliLearn-AI directly supports:
 
-> **United Nations Sustainable Development Goal 4 (SDG 4): Ensure inclusive and equitable quality education and promote lifelong learning opportunities for all.**
+> Ensure inclusive and equitable quality education and promote lifelong learning opportunities for all.
 
-### 📚 Educational Contributions
+### Educational Contributions
 
 - AI-assisted personalized learning
 - Interactive digital education
-- Automated student assessment systems
+- Automated student assessment
 - Intelligent revision support
 - AI-powered educational accessibility
 - Self-learning enhancement using Generative AI
-
-The project demonstrates how Artificial Intelligence can be responsibly applied to modern educational ecosystems.
 
 ---
 
@@ -53,167 +51,152 @@ The project demonstrates how Artificial Intelligence can be responsibly applied 
 
 # 📄 1. RAG-Based Document Intelligence
 
-### Features:
+### Features
 - Upload multiple PDFs
-- Extract multi-page text
-- Configurable chunking
-- Semantic embeddings using HuggingFace
+- Multi-page text extraction
+- Intelligent chunking
+- Semantic embeddings
 - FAISS vector storage
 - Top-K similarity retrieval
 - Context-aware AI answers
-- Source/page-level retrieval transparency
+- Source/page-level transparency
 
-### Pipeline:
-PDF → Chunking → Embeddings → FAISS → Retrieval → LLM Response
+### Pipeline
 
-### Technologies:
-- LangChain
-- FAISS
-- Sentence Transformers
-- Groq LLaMA
+```text
+PDF Upload
+   ↓
+Text Extraction
+   ↓
+Chunking
+   ↓
+Embeddings
+   ↓
+FAISS Vector Storage
+   ↓
+Similarity Retrieval
+   ↓
+LLM Response
+```
 
 ---
 
 # 💬 2. General AI Chatbot
 
-### Features:
+### Features
 - Conversational AI assistant
+- Educational discussions
 - Adjustable temperature
-- Educational assistance
-- Contextual interaction
-- Independent of uploaded PDFs
+- Follow-up questioning
 - Conversational memory support
 
 ---
 
 # 📚 3. AI Study Assistant
 
-### Includes:
-
 ## 📑 Summarization
-Generates structured summaries from uploaded documents.
+Generate concise summaries from uploaded PDFs.
 
 ## 📌 Important Point Extraction
-Identifies key exam-oriented concepts.
+Extract exam-oriented concepts.
 
 ## 📝 Notes Generation
-Creates concise revision-ready notes.
+Create structured revision notes.
 
-## 🧒 Explain Like Beginner
-Simplifies difficult concepts into beginner-friendly explanations.
+## 🧒 Explain Simple
+Simplify complex concepts for beginners.
 
 ---
 
 # 📝 4. AI MCQ Evaluation System
 
-### Features:
-- Context-aware MCQ generation
-- Questions generated directly from PDFs
-- Multiple-choice evaluation
-- Automatic scoring
-- Correct/wrong answer analysis
-- Explanation generation
-- Percentage calculation
-- Student attempt tracking
-- Downloadable MCQ reports
-- MongoDB score persistence
+### Features
+- AI-generated MCQs
+- Context-aware questions
+- Automatic evaluation
+- Score calculation
+- Percentage generation
+- Explanation feedback
+- Attempt tracking
+- Downloadable reports
 
 ---
 
 # 📄 5. Subjective Answer Evaluation
 
-### Features:
+### Features
 - AI-generated descriptive questions
 - Student answer submission
 - Automated evaluation
-- AI-generated feedback
-- Score generation
+- Feedback generation
 - Downloadable evaluation reports
-- Persistent database storage
 
 ---
 
 # 🤖 6. Machine Learning Prediction System
 
-### Features:
+### Features
 - Student performance prediction
 - Real-world dataset analysis
-- Multiple ML model training
+- Multiple model training
 - Accuracy comparison
 - Confidence-based predictions
-- Model persistence using Pickle
 
-### Algorithms Used:
-- Logistic Regression
+### Algorithms Used
 - Random Forest Classifier
+- Logistic Regression
 
-### Prediction Inputs:
+### Prediction Inputs
 - Study hours
 - Attendance
 - Sleep patterns
 - Social media usage
 - Mental health
-- Exercise frequency
 - Internet quality
+- Exercise frequency
 - Diet quality
 - Extracurricular participation
-- etc.
-
-### ML Workflow:
-Dataset → Preprocessing → Training → Evaluation → Prediction
 
 ---
 
 # 📊 7. Exploratory Data Analysis (EDA)
 
-### Features:
+### Features
 - Statistical summaries
 - Missing value analysis
-- Correlation analysis
-- Dataset visualization
-- Histogram generation
-- Numeric feature insights
-
-### Libraries:
-- Pandas
-- NumPy
-- Matplotlib
+- Histogram visualization
+- Numeric feature analysis
+- Dataset insights
 
 ---
 
 # 📈 8. Analytics Dashboard
 
-### Tracks:
+### Tracks
 - Student attempts
 - Best score
 - Last score
-- Database report count
-- AI interaction statistics
-- Learning activity tracking
-- Historical performance tracking
-- Recent learning history
-- AI-generated learning insights
-- MongoDB-powered educational memory
+- Learning history
+- Database reports
+- AI learning insights
+- Educational recommendations
 
 ---
 
 # ☁️ 9. MongoDB Integration
 
-### Stores:
+### Stores
 - MCQ reports
 - Evaluation reports
-- Student attempts
-- User analytics
-- Timestamps
+- Analytics history
+- Learning records
+- User attempts
 
-### Benefits:
+### Benefits
 - Persistent storage
-- Multi-user tracking
+- Historical tracking
 - Educational analytics
-- Historical evaluation storage
 - Personalized learning memory
-- AI-assisted educational recommendations
-- Performance trend tracking
 
 ---
 
@@ -221,7 +204,8 @@ Dataset → Preprocessing → Training → Evaluation → Prediction
 
 Detects unethical queries such as:
 - “paper leak”
-- “predict exact question”
+- “exact question”
+- “predict exact”
 
 and prevents misuse of the system.
 
@@ -229,36 +213,21 @@ and prevents misuse of the system.
 
 # 🔁 11. Conversational Memory System
 
-### Features:
-- Stores previous AI outputs
-- Enables contextual follow-up questions
-- Improves conversational continuity
-- Enhances educational interaction quality
+### Features
+- Context-aware replies
+- Previous response memory
+- Learning continuity
+- Educational interaction enhancement
 
 ---
 
-# 🧠 12. AI Learning Analytics & Memory
+# 📄 12. Export & Reporting System
 
-### Features:
-- MongoDB-powered learning history
-- Personalized educational context
-- Historical score tracking
-- Recent activity retrieval
-- AI-assisted learning recommendations
-- Educational interaction continuity
-
-### Purpose:
-Transforms the system from a temporary chatbot into a persistent AI-powered educational ecosystem.
-
----
-
-# 📄 13. Export & Reporting System
-
-### Features:
-- Download AI-generated notes
-- Export evaluation reports
-- Download MCQ performance reports
-- Save generated educational content
+### Features
+- Download AI-generated answers
+- Export MCQ reports
+- Save evaluation reports
+- Generate downloadable educational content
 
 ---
 
@@ -277,7 +246,7 @@ FAISS Vector Storage
    ↓
 User Query
    ↓
-Similarity Retrieval (Top-K)
+Similarity Retrieval
    ↓
 Context + Memory Injection
    ↓
@@ -292,18 +261,16 @@ Final AI Response
 
 | Component | Technology |
 |---|---|
-| Language | Python 🐍 |
-| UI | Streamlit 🎨 |
-| LLM API | GROQ API ⚡ |
-| LLM Model | LLaMA 3.1 🧠 |
-| Embeddings | Sentence Transformers 🤖 |
-| Vector Database | FAISS 📊 |
-| PDF Processing | PyPDF2 📄 |
-| ML Framework | Scikit-learn 🤖 |
-| Database | MongoDB ☁️ |
-| Data Processing | Pandas + NumPy 📈 |
-| Visualization | Matplotlib 📊 |
-| Environment Management | Python-dotenv ⚙️ |
+| Language | Python |
+| UI | Streamlit |
+| LLM API | Groq |
+| LLM Model | LLaMA 3.1 |
+| Vector Database | FAISS |
+| Embeddings | Sentence Transformers |
+| ML Framework | Scikit-learn |
+| Database | MongoDB |
+| Visualization | Matplotlib |
+| PDF Processing | PyPDF2 |
 
 ---
 
@@ -315,21 +282,15 @@ IntelliLearn-AI/
 ├── app.py
 ├── requirements.txt
 ├── README.md
-├── .gitignore
 ├── .env
 │
 ├── data/
 │   └── student_habits_performance.csv
 │
 ├── models/
-│
-├── reports/
-│
 ├── uploads/
-│
+├── reports/
 ├── exports/
-│
-├── assets/
 │
 └── .streamlit/
     └── config.toml
@@ -378,7 +339,7 @@ pip install -r requirements.txt
 
 ## 4️⃣ Configure Environment Variables
 
-Create a `.env` file:
+Create `.env`
 
 ```env
 GROQ_API_KEY=your_groq_api_key
@@ -398,12 +359,11 @@ streamlit run app.py
 # 📚 Educational Applications
 
 - AI-powered study assistant
-- Interactive document learning
-- Automated test generation
-- Smart revision platform
+- Interactive PDF learning
+- Automated revision support
+- AI evaluation platform
 - Student performance prediction
 - Educational analytics system
-- AI-assisted self-learning
 
 ---
 
@@ -414,12 +374,10 @@ streamlit run app.py
 - Semantic Search
 - Prompt Engineering
 - Vector Databases
-- Embeddings
 - Machine Learning Pipelines
-- Model Comparison
 - Educational NLP
 - Conversational Memory
-- Student Performance Analytics
+- Student Analytics
 
 ---
 
@@ -427,53 +385,50 @@ streamlit run app.py
 
 ✅ End-to-end AI educational platform  
 ✅ Combines NLP + ML + RAG in one system  
-✅ Context-aware AI document interaction  
-✅ Automated educational evaluation system  
-✅ MongoDB-powered persistent analytics  
-✅ Personalized AI learning memory  
+✅ Automated educational evaluation  
 ✅ Interactive AI learning workflow  
-✅ Industry-style capstone architecture  
-✅ Real-world AI application deployment  
-✅ SDG 4 educational impact alignment  
+✅ MongoDB-powered educational analytics  
+✅ Personalized learning memory  
+✅ Real-world deployment architecture  
+✅ Industry-style capstone implementation  
+✅ SDG 4 educational alignment  
 
 ---
 
 # 🏆 Internship Curriculum Coverage
 
-This project demonstrates practical implementation of:
+This project demonstrates implementation of:
 
 - Machine Learning Pipelines
-- NLP & Retrieval-Augmented Generation (RAG)
-- Conversational AI
+- NLP & Retrieval-Augmented Generation
 - Educational Analytics
-- MongoDB Database Integration
-- Exploratory Data Analysis (EDA)
+- Conversational AI
+- Streamlit Deployment
+- MongoDB Integration
+- Exploratory Data Analysis
 - AI-based Evaluation Systems
 - Model Training & Comparison
-- Streamlit AI Deployment
-- Real-world AI System Design
 
-The project aligns strongly with industry-oriented AI/ML internship objectives and capstone-level educational AI development.
+The system aligns strongly with industry-oriented AI/ML internship objectives.
 
 ---
 
 # 🔮 Future Enhancements
 
-- 📌 PDF answer highlighting
-- 📱 Mobile optimization
-- 📊 Advanced analytics dashboard
-- 🌐 Multilingual support
-- 🧠 Personalized learning recommendations
-- 📄 Multi-document comparison
-- 🔍 Confidence scoring
-- 🧾 PDF-based citation system
+- PDF answer highlighting
+- Confidence scoring
+- Personalized recommendations
+- Multi-document comparison
+- Advanced analytics dashboard
+- Mobile optimization
+- Multilingual support
 
 ---
 
 # 👨‍💻 Author
 
-## Supratik Mitra  
-B.Tech CSE 
+## Supratik Mitra
+B.Tech CSE (AI & ML)
 
 ---
 
@@ -482,8 +437,8 @@ B.Tech CSE
 If you found this project useful:
 
 - ⭐ Star the repository
-- 🔗 Share with others
-- 🚀 Fork the project
+- 🔗 Share the project
+- 🚀 Fork the repository
 
 ---
 
