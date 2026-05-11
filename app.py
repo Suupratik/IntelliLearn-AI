@@ -53,7 +53,7 @@ if MONGO_URI:
 
         mongo_client = MongoClient(
             MONGO_URI,
-            serverSelectionTimeoutMS=3000
+            serverSelectionTimeoutMS=6000
         )
 
         mongo_client.server_info()
