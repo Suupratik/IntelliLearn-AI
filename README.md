@@ -26,6 +26,27 @@ The system transforms static study materials into an interactive AI-assisted edu
 
 ---
 
+# 🌍 Alignment with UN Sustainable Development Goal (SDG 4)
+
+## 🎯 SDG 4 — Quality Education
+
+IntelliLearn-AI directly supports:
+
+> **United Nations Sustainable Development Goal 4 (SDG 4): Ensure inclusive and equitable quality education and promote lifelong learning opportunities for all.**
+
+### 📚 Educational Contributions
+
+- AI-assisted personalized learning
+- Interactive digital education
+- Automated student assessment systems
+- Intelligent revision support
+- AI-powered educational accessibility
+- Self-learning enhancement using Generative AI
+
+The project demonstrates how Artificial Intelligence can be responsibly applied to modern educational ecosystems.
+
+---
+
 # ✨ Key Features
 
 ---
@@ -35,7 +56,7 @@ The system transforms static study materials into an interactive AI-assisted edu
 ### Features:
 - Upload multiple PDFs
 - Extract multi-page text
-- Configurable chunk size & overlap
+- Configurable chunking
 - Semantic embeddings using HuggingFace
 - FAISS vector storage
 - Top-K similarity retrieval
@@ -44,6 +65,12 @@ The system transforms static study materials into an interactive AI-assisted edu
 
 ### Pipeline:
 PDF → Chunking → Embeddings → FAISS → Retrieval → LLM Response
+
+### Technologies:
+- LangChain
+- FAISS
+- Sentence Transformers
+- Groq LLaMA
 
 ---
 
@@ -55,6 +82,7 @@ PDF → Chunking → Embeddings → FAISS → Retrieval → LLM Response
 - Educational assistance
 - Contextual interaction
 - Independent of uploaded PDFs
+- Conversational memory support
 
 ---
 
@@ -76,14 +104,18 @@ Simplifies difficult concepts into beginner-friendly explanations.
 
 ---
 
-# 📝 4. AI MCQ Generation System
+# 📝 4. AI MCQ Evaluation System
 
 ### Features:
 - Context-aware MCQ generation
 - Questions generated directly from PDFs
 - Multiple-choice evaluation
 - Automatic scoring
+- Correct/wrong answer analysis
+- Explanation generation
+- Percentage calculation
 - Student attempt tracking
+- Downloadable MCQ reports
 - MongoDB score persistence
 
 ---
@@ -94,7 +126,8 @@ Simplifies difficult concepts into beginner-friendly explanations.
 - AI-generated descriptive questions
 - Student answer submission
 - Automated evaluation
-- Feedback generation
+- AI-generated feedback
+- Score generation
 - Downloadable evaluation reports
 - Persistent database storage
 
@@ -108,6 +141,7 @@ Simplifies difficult concepts into beginner-friendly explanations.
 - Multiple ML model training
 - Accuracy comparison
 - Confidence-based predictions
+- Model persistence using Pickle
 
 ### Algorithms Used:
 - Logistic Regression
@@ -122,7 +156,11 @@ Simplifies difficult concepts into beginner-friendly explanations.
 - Exercise frequency
 - Internet quality
 - Diet quality
+- Extracurricular participation
 - etc.
+
+### ML Workflow:
+Dataset → Preprocessing → Training → Evaluation → Prediction
 
 ---
 
@@ -136,6 +174,11 @@ Simplifies difficult concepts into beginner-friendly explanations.
 - Histogram generation
 - Numeric feature insights
 
+### Libraries:
+- Pandas
+- NumPy
+- Matplotlib
+
 ---
 
 # 📈 8. Analytics Dashboard
@@ -146,6 +189,11 @@ Simplifies difficult concepts into beginner-friendly explanations.
 - Last score
 - Database report count
 - AI interaction statistics
+- Learning activity tracking
+- Historical performance tracking
+- Recent learning history
+- AI-generated learning insights
+- MongoDB-powered educational memory
 
 ---
 
@@ -162,6 +210,10 @@ Simplifies difficult concepts into beginner-friendly explanations.
 - Persistent storage
 - Multi-user tracking
 - Educational analytics
+- Historical evaluation storage
+- Personalized learning memory
+- AI-assisted educational recommendations
+- Performance trend tracking
 
 ---
 
@@ -172,6 +224,41 @@ Detects unethical queries such as:
 - “predict exact question”
 
 and prevents misuse of the system.
+
+---
+
+# 🔁 11. Conversational Memory System
+
+### Features:
+- Stores previous AI outputs
+- Enables contextual follow-up questions
+- Improves conversational continuity
+- Enhances educational interaction quality
+
+---
+
+# 🧠 12. AI Learning Analytics & Memory
+
+### Features:
+- MongoDB-powered learning history
+- Personalized educational context
+- Historical score tracking
+- Recent activity retrieval
+- AI-assisted learning recommendations
+- Educational interaction continuity
+
+### Purpose:
+Transforms the system from a temporary chatbot into a persistent AI-powered educational ecosystem.
+
+---
+
+# 📄 13. Export & Reporting System
+
+### Features:
+- Download AI-generated notes
+- Export evaluation reports
+- Download MCQ performance reports
+- Save generated educational content
 
 ---
 
@@ -207,16 +294,16 @@ Final AI Response
 |---|---|
 | Language | Python 🐍 |
 | UI | Streamlit 🎨 |
-| LLM | GROQ API ⚡ |
-| Model | LLaMA 3.1 |
+| LLM API | GROQ API ⚡ |
+| LLM Model | LLaMA 3.1 🧠 |
 | Embeddings | Sentence Transformers 🤖 |
 | Vector Database | FAISS 📊 |
 | PDF Processing | PyPDF2 📄 |
 | ML Framework | Scikit-learn 🤖 |
-| Deep Learning | TensorFlow 🔥 |
 | Database | MongoDB ☁️ |
 | Data Processing | Pandas + NumPy 📈 |
 | Visualization | Matplotlib 📊 |
+| Environment Management | Python-dotenv ⚙️ |
 
 ---
 
@@ -228,17 +315,19 @@ IntelliLearn-AI/
 ├── app.py
 ├── requirements.txt
 ├── README.md
-├── .env
 ├── .gitignore
+├── .env
 │
 ├── data/
-│   └── student_performance.csv
+│   └── student_habits_performance.csv
 │
 ├── models/
 │
 ├── reports/
 │
 ├── uploads/
+│
+├── exports/
 │
 ├── assets/
 │
@@ -272,6 +361,11 @@ python -m venv venv
 venv\Scripts\activate
 ```
 
+#### Linux / Mac
+```bash
+source venv/bin/activate
+```
+
 ---
 
 ## 3️⃣ Install Dependencies
@@ -284,7 +378,7 @@ pip install -r requirements.txt
 
 ## 4️⃣ Configure Environment Variables
 
-Create `.env`
+Create a `.env` file:
 
 ```env
 GROQ_API_KEY=your_groq_api_key
@@ -306,9 +400,10 @@ streamlit run app.py
 - AI-powered study assistant
 - Interactive document learning
 - Automated test generation
-- Smart revision system
+- Smart revision platform
 - Student performance prediction
-- Educational analytics platform
+- Educational analytics system
+- AI-assisted self-learning
 
 ---
 
@@ -332,10 +427,33 @@ streamlit run app.py
 
 ✅ End-to-end AI educational platform  
 ✅ Combines NLP + ML + RAG in one system  
+✅ Context-aware AI document interaction  
+✅ Automated educational evaluation system  
+✅ MongoDB-powered persistent analytics  
+✅ Personalized AI learning memory  
 ✅ Interactive AI learning workflow  
-✅ Persistent educational analytics  
-✅ Real-world deployment architecture  
-✅ Industry-style capstone project  
+✅ Industry-style capstone architecture  
+✅ Real-world AI application deployment  
+✅ SDG 4 educational impact alignment  
+
+---
+
+# 🏆 Internship Curriculum Coverage
+
+This project demonstrates practical implementation of:
+
+- Machine Learning Pipelines
+- NLP & Retrieval-Augmented Generation (RAG)
+- Conversational AI
+- Educational Analytics
+- MongoDB Database Integration
+- Exploratory Data Analysis (EDA)
+- AI-based Evaluation Systems
+- Model Training & Comparison
+- Streamlit AI Deployment
+- Real-world AI System Design
+
+The project aligns strongly with industry-oriented AI/ML internship objectives and capstone-level educational AI development.
 
 ---
 
@@ -348,13 +466,14 @@ streamlit run app.py
 - 🧠 Personalized learning recommendations
 - 📄 Multi-document comparison
 - 🔍 Confidence scoring
+- 🧾 PDF-based citation system
 
 ---
 
 # 👨‍💻 Author
 
-## Supratik Mitra
-B.Tech CSE 
+## Supratik Mitra  
+B.Tech CSE (AI & ML)
 
 ---
 

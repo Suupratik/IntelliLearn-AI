@@ -164,38 +164,82 @@ def savage_reply():
 # =======================
 with st.sidebar:
 
-    st.write(
+    # =======================
+    # USER INFO
+    # =======================
+    st.title("🧠 IntelliLearn-AI")
+
+    st.success(
         f"👤 {st.session_state.user_id}"
     )
 
+    # =======================
+    # LOGOUT
+    # =======================
+    if st.button("🚪 Logout"):
+
+        st.session_state.user_id = None
+
+        st.rerun()
+
+    st.markdown("---")
+
+    # =======================
+    # PDF UPLOAD
+    # =======================
+    st.subheader("📄 Upload Study Materials")
+
     files = st.file_uploader(
-        "Upload PDFs",
+
+        "Upload PDF Documents",
+
         type="pdf",
+
         accept_multiple_files=True
     )
 
+    # =======================
+    # RAG CONTROLS
+    # =======================
+    st.subheader("⚙️ RAG Controls")
+
     k = st.slider(
+
         "Top-K Retrieval",
+
         1,
+
         10,
+
         5
     )
 
     temperature = st.slider(
-        "Temperature",
+
+        "LLM Temperature",
+
         0.0,
+
         1.0,
+
         0.7
     )
 
     use_memory = st.checkbox(
-        "Use Memory",
+
+        "Enable Conversational Memory",
+
         value=True
     )
 
+    # =======================
+    # MODES
+    # =======================
+    st.subheader("🧠 AI Modes")
+
     study_mode = st.selectbox(
 
-        "Mode",
+        "Choose Mode",
 
         [
 
@@ -223,34 +267,106 @@ with st.sidebar:
         ]
     )
 
-    if st.button("Clear Chat"):
+    st.markdown("---")
+
+    # =======================
+    # QUICK ACTIONS
+    # =======================
+    st.subheader("⚡ Quick Actions")
+
+    if st.button("🧹 Clear Chat"):
 
         st.session_state.chat_history = []
-        st.rerun()
 
-    if st.button("Reset App"):
-
-        for k in list(st.session_state.keys()):
-            del st.session_state[k]
+        st.success("Chat cleared.")
 
         st.rerun()
+
+    if st.button("🔄 Reset App"):
+
+        for key in list(st.session_state.keys()):
+
+            del st.session_state[key]
+
+        st.rerun()
+
+    if st.button("🗑 Reset PDFs"):
+
+        st.session_state.vector_store = None
+
+        st.success("PDF knowledge base cleared.")
 
     st.markdown("---")
 
-    st.subheader("📊 System Status")
+    # =======================
+    # LEARNING SNAPSHOT
+    # =======================
+    st.subheader("📊 Learning Snapshot")
+
+    st.metric(
+
+        "Chat Messages",
+
+        len(st.session_state.chat_history)
+    )
+
+    st.metric(
+
+        "Attempts",
+
+        st.session_state.attempts
+    )
+
+    st.metric(
+
+        "Best Score",
+
+        st.session_state.best_score
+    )
+
+    st.metric(
+
+        "Last Score",
+
+        st.session_state.last_score
+    )
+
+    st.markdown("---")
+
+    # =======================
+    # SYSTEM STATUS
+    # =======================
+    st.subheader("🛠 System Status")
 
     st.write(
-        f"Chat Messages: {len(st.session_state.chat_history)}"
+
+        f"PDF Knowledge Base: {'✅ Ready' if st.session_state.vector_store else '❌ Not Loaded'}"
     )
 
     st.write(
-        f"PDF Loaded: {'✅' if st.session_state.vector_store else '❌'}"
+
+        f"ML Models: {'✅ Trained' if st.session_state.ml_trained else '❌ Not Trained'}"
     )
 
     st.write(
-        f"ML Trained: {'✅' if st.session_state.ml_trained else '❌'}"
+
+        f"Memory Mode: {'✅ Enabled' if use_memory else '❌ Disabled'}"
     )
 
+    st.markdown("---")
+
+    # =======================
+    # SDG INFO
+    # =======================
+    st.info(
+
+        """
+🎯 SDG 4: Quality Education
+
+AI-powered educational assistance for interactive and intelligent learning.
+"""
+    )
+    
 # =======================
 # PDF PROCESSING
 # =======================
@@ -360,7 +476,7 @@ if study_mode == "Dataset Analysis":
     except Exception as e:
 
         st.error(f"Error: {e}")
-
+        
 # =======================
 # ML PREDICTION
 # =======================
@@ -716,7 +832,6 @@ elif study_mode == "General Chatbot":
         )
 
         st.markdown(answer)
-
 # =======================
 # MAIN RAG SYSTEM
 # =======================
@@ -778,13 +893,63 @@ else:
             [d.page_content for d in docs]
         )
 
-        extra_context = (
+        # =======================
+        # MEMORY CONTEXT
+        # =======================
+        extra_context = ""
 
-            st.session_state.last_output
+        # Session Memory
+        if use_memory:
 
-            if use_memory else ""
-        )
+            extra_context += (
+                st.session_state.last_output
+            )
 
+        # MongoDB Learning Memory
+        if collection is not None:
+
+            try:
+
+                recent_history = list(
+
+                    collection.find({
+
+                        "username":
+                        st.session_state.user_id
+
+                    }).sort(
+                        "timestamp",
+                        -1
+                    ).limit(3)
+                )
+
+                if recent_history:
+
+                    extra_context += "\n\nPrevious Learning History:\n"
+
+                    for item in recent_history:
+
+                        module = item.get(
+                            "module",
+                            ""
+                        )
+
+                        score = item.get(
+                            "score",
+                            ""
+                        )
+
+                        extra_context += f"""
+
+Module:
+{module}
+
+Previous Score:
+{score}
+"""
+
+            except Exception:
+                pass
         # =======================
         # PROMPTS
         # =======================
@@ -1150,7 +1315,7 @@ Generated On:
                 st.write(
                     d.page_content[:300]
                 )
-                
+          
 # =======================
 # ANALYTICS DASHBOARD
 # =======================
@@ -1158,21 +1323,31 @@ if study_mode == "Analytics Dashboard":
 
     st.header("📊 Analytics Dashboard")
 
-    st.metric(
+    # =======================
+    # SESSION ANALYTICS
+    # =======================
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric(
         "Attempts",
         st.session_state.attempts
     )
 
-    st.metric(
+    col2.metric(
         "Last Score",
         st.session_state.last_score
     )
 
-    st.metric(
+    col3.metric(
         "Best Score",
         st.session_state.best_score
     )
 
+    st.markdown("---")
+
+    # =======================
+    # DATABASE ANALYTICS
+    # =======================
     if collection is not None:
 
         try:
@@ -1186,9 +1361,132 @@ if study_mode == "Analytics Dashboard":
                 total_reports
             )
 
-        except Exception:
-            pass
+            st.markdown("---")
 
+            # =======================
+            # USER HISTORY
+            # =======================
+            st.subheader(
+                "🕘 Recent Learning History"
+            )
+
+            user_reports = list(
+
+                collection.find({
+
+                    "username":
+                    st.session_state.user_id
+
+                }).sort(
+                    "timestamp",
+                    -1
+                ).limit(5)
+            )
+
+            if not user_reports:
+
+                st.info(
+                    "No historical reports found."
+                )
+
+            else:
+
+                for report in user_reports:
+
+                    module = report.get(
+                        "module",
+                        "Unknown"
+                    )
+
+                    timestamp = report.get(
+                        "timestamp",
+                        "N/A"
+                    )
+
+                    score = report.get(
+                        "score",
+                        "N/A"
+                    )
+
+                    percentage = report.get(
+                        "percentage",
+                        "N/A"
+                    )
+
+                    st.markdown(
+
+                        f"""
+### 📘 {module}
+
+🕒 {timestamp}
+
+🏆 Score: {score}
+
+📊 Percentage: {percentage}
+"""
+                    )
+
+                    st.markdown("---")
+
+            # =======================
+            # AI LEARNING INSIGHT
+            # =======================
+            st.subheader(
+                "🧠 AI Learning Insight"
+            )
+
+            if (
+                st.session_state.best_score >= 4
+            ):
+
+                st.success(
+
+                    """
+Strong performance detected.
+
+Recommendation:
+- Continue revision practice
+- Attempt advanced questions
+"""
+                )
+
+            elif (
+                st.session_state.attempts >= 3
+            ):
+
+                st.warning(
+
+                    """
+Performance improvement recommended.
+
+Suggested Actions:
+- Revise important points
+- Practice MCQs again
+- Use 'Explain Simple' mode
+"""
+                )
+
+            else:
+
+                st.info(
+
+                    """
+Keep practicing consistently to improve learning analytics.
+"""
+                )
+
+        except Exception as e:
+
+            st.error(
+                f"Analytics error: {e}"
+            )
+
+    else:
+
+        st.warning(
+            "MongoDB not connected."
+        )
+  
 # =======================
 # CHAT HISTORY
 # =======================
