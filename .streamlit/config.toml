@@ -1,0 +1,31 @@
+[theme]
+base = "dark"
+primaryColor = "#4facfe"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#1a1c24"
+textColor = "#ffffff"
+font = "sans serif"
+
+[server]
+runOnSave = true
+maxUploadSize = 200
+enableCORS = false
+enableWebsocketCompression = true
+fileWatcherType = "auto"
+headless = true
+enableXsrfProtection = true
+
+[runner]
+fastReruns = true
+magicEnabled = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "auto"
+showErrorDetails = true
+
+[logger]
+level = "info"
+messageFormat = "%(asctime)s %(message)s"

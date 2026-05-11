@@ -1,0 +1,10 @@
+venv/
+.env
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
+models/
+reports/
+uploads/
+exports/generated_reports/
+.DS_Store
