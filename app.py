@@ -1,117 +1,50 @@
-# =========================================================
-# IntelliLearn-AI
-# Modular AI Study Assistant with RAG, ML and Evaluation
-# =========================================================
-
-# =========================================================
+# =======================
 # IMPORTS
-# =========================================================
+# =======================
 import streamlit as st
 from PyPDF2 import PdfReader
 from dotenv import load_dotenv
-
 import os
+import random
 import re
 import json
-import random
 import pickle
+
+from datetime import datetime
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from datetime import datetime
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 from groq import Groq
 
-from langchain_text_splitters import (
-    RecursiveCharacterTextSplitter
-)
-
-from langchain_community.vectorstores import (
-    FAISS
-)
-
-from langchain_community.embeddings import (
-    HuggingFaceEmbeddings
-)
-
-from sklearn.model_selection import (
-    train_test_split
-)
-
-from sklearn.preprocessing import (
-    LabelEncoder
-)
-
-from sklearn.compose import (
-    ColumnTransformer
-)
-
-from sklearn.pipeline import (
-    Pipeline
-)
-
-from sklearn.impute import (
-    SimpleImputer
-)
-
-from sklearn.preprocessing import (
-    OneHotEncoder,
-    StandardScaler
-)
-
-from sklearn.ensemble import (
-    RandomForestClassifier
-)
-
-from sklearn.linear_model import (
-    LogisticRegression
-)
-
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    confusion_matrix,
-    classification_report
-)
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 
 from pymongo import MongoClient
 
-# =========================================================
+# =======================
 # LOAD ENV
-# =========================================================
+# =======================
 load_dotenv()
 
-GROQ_API_KEY = (
-    os.getenv("GROQ_API_KEY")
-    or st.secrets.get("GROQ_API_KEY", None)
-)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
+MONGO_URI = os.getenv("MONGO_URI")
 
-MONGO_URI = (
-    os.getenv("MONGO_URI")
-)
+# =======================
+# API CLIENT
+# =======================
+client = Groq(api_key=GROQ_API_KEY)
 
-# =========================================================
-# SAFETY CHECKS
-# =========================================================
-if not GROQ_API_KEY:
-
-    st.error(
-        "❌ GROQ_API_KEY not found."
-    )
-
-    st.stop()
-
-# =========================================================
-# CLIENTS
-# =========================================================
-client = Groq(
-    api_key=GROQ_API_KEY
-)
-
+# =======================
+# MONGODB
+# =======================
 collection = None
 
 if MONGO_URI:
@@ -125,133 +58,89 @@ if MONGO_URI:
 
         mongo_client.server_info()
 
-        db = mongo_client[
-            "intellilearn_ai"
-        ]
+        db = mongo_client["intellilearn_ai"]
 
-        collection = db[
-            "reports"
-        ]
+        collection = db["student_reports"]
 
     except Exception:
-
         collection = None
 
-# =========================================================
-# PAGE CONFIG
-# =========================================================
+# =======================
+# SAVE REPORT
+# =======================
+def save_report(data):
+
+    try:
+
+        if collection is not None:
+            collection.insert_one(data)
+
+    except Exception:
+        pass
+
+# =======================
+# UI
+# =======================
 st.set_page_config(
-
-    page_title=
-    "IntelliLearn-AI",
-
-    page_icon=
-    "🧠",
-
-    layout=
-    "wide"
+    page_title="IntelliLearn-AI",
+    page_icon="🧠",
+    layout="wide"
 )
 
-# =========================================================
-# APP HEADER
-# =========================================================
-st.title(
-    "🧠 IntelliLearn-AI"
-)
-
+st.title("🧠 IntelliLearn-AI")
 st.caption(
-    """
-Modular AI Study Assistant with
-RAG, ML and Evaluation System
-"""
+    "Modular AI Study Assistant with RAG, ML and Evaluation System"
 )
 
-# =========================================================
-# SESSION INIT
-# =========================================================
-def init_session():
+# =======================
+# SESSION
+# =======================
+defaults = {
 
-    defaults = {
+    "chat_history": [],
+    "vector_store": None,
+    "last_output": "",
+    "last_score": 0,
+    "best_score": 0,
+    "attempts": 0,
+    "mcqs": None,
+    "subjective_question": "",
+    "ml_trained": False
+}
 
-        "chat_history": [],
+for k, v in defaults.items():
 
-        "vector_store": None,
+    if k not in st.session_state:
+        st.session_state[k] = v
 
-        "last_output": "",
-
-        "mcq_json": None,
-
-        "subjective_question": None,
-
-        "user_stats": {},
-
-        "model_results": None,
-
-        "best_model": None,
-
-        "ml_trained": False
-    }
-
-    for key, value in defaults.items():
-
-        if key not in st.session_state:
-
-            st.session_state[key] = value
-
-
-init_session()
-
-# =========================================================
+# =======================
 # LOGIN
-# =========================================================
+# =======================
 if "user_id" not in st.session_state:
 
     st.session_state.user_id = None
 
 if not st.session_state.user_id:
 
-    st.subheader(
-        "🔐 Login"
-    )
+    st.subheader("🔐 Login")
 
-    username = st.text_input(
-        "Enter Username"
-    )
+    username = st.text_input("Enter Username")
 
-    if st.button(
-        "Login"
-    ):
+    if st.button("Login"):
 
-        username = (
-            username.strip()
-            if username else ""
-        )
+        if username.strip():
 
-        if username:
-
-            st.session_state.user_id = username
-
-            st.success(
-                f"Welcome {username}"
-            )
-
+            st.session_state.user_id = username.strip()
             st.rerun()
-
-        else:
-
-            st.warning(
-                "Please enter username."
-            )
 
     st.stop()
 
-# =========================================================
-# SAFETY FUNCTIONS
-# =========================================================
+# =======================
+# SAFETY
+# =======================
 def detect_unfair_query(query):
 
     keywords = [
-
         "paper leak",
         "exact question",
         "predict exact"
@@ -262,99 +151,41 @@ def detect_unfair_query(query):
         for k in keywords
     )
 
-
 def savage_reply():
 
     return random.choice([
-
         "Go study 😄",
         "No shortcuts 😂",
         "Focus on concepts 😉"
     ])
 
-# =========================================================
+# =======================
 # SIDEBAR
-# =========================================================
+# =======================
 with st.sidebar:
-
-    st.header(
-        "⚙️ Control Panel"
-    )
 
     st.write(
         f"👤 {st.session_state.user_id}"
     )
 
-    if st.button(
-        "Logout"
-    ):
-
-        st.session_state.user_id = None
-
-        st.rerun()
-
-    st.markdown("---")
-
-    # =====================================================
-    # PDF UPLOAD
-    # =====================================================
-    st.subheader(
-        "📄 Upload PDFs"
-    )
-
     files = st.file_uploader(
-
-        "Upload Study PDFs",
-
-        type=["pdf"],
-
+        "Upload PDFs",
+        type="pdf",
         accept_multiple_files=True
     )
 
-    # =====================================================
-    # RAG CONTROLS
-    # =====================================================
-    st.subheader(
-        "🧠 RAG Controls"
-    )
-
-    chunk_size = st.slider(
-
-        "Chunk Size",
-
-        200,
-        2000,
-        500,
-        100
-    )
-
-    chunk_overlap = st.slider(
-
-        "Chunk Overlap",
-
-        0,
-        500,
-        100,
-        10
-    )
-
-    top_k = st.slider(
-
+    k = st.slider(
         "Top-K Retrieval",
-
         1,
         10,
         5
     )
 
     temperature = st.slider(
-
         "Temperature",
-
         0.0,
         1.0,
-        0.4,
-        0.1
+        0.7
     )
 
     use_memory = st.checkbox(
@@ -362,14 +193,9 @@ with st.sidebar:
         value=True
     )
 
-    st.markdown("---")
-
-    # =====================================================
-    # MODES
-    # =====================================================
     study_mode = st.selectbox(
 
-        "Select Mode",
+        "Mode",
 
         [
 
@@ -381,52 +207,54 @@ with st.sidebar:
 
             "Notes",
 
+            "MCQ Test",
+
             "Explain Simple",
 
             "General Chatbot",
 
-            "MCQ Test",
-
             "Subjective Evaluation",
-
-            "Dataset Analysis",
 
             "ML Prediction",
 
             "Analytics Dashboard",
 
-            "Time Series Demo"
+            "Dataset Analysis"
         ]
     )
 
-    st.markdown("---")
-
-    if st.button(
-        "Clear Chat"
-    ):
+    if st.button("Clear Chat"):
 
         st.session_state.chat_history = []
+        st.rerun()
+
+    if st.button("Reset App"):
+
+        for k in list(st.session_state.keys()):
+            del st.session_state[k]
 
         st.rerun()
 
-    if st.button(
-        "Reset PDFs"
-    ):
+    st.markdown("---")
 
-        st.session_state.vector_store = None
+    st.subheader("📊 System Status")
 
-        st.success(
-            "PDF memory cleared."
-        )
+    st.write(
+        f"Chat Messages: {len(st.session_state.chat_history)}"
+    )
 
-# =========================================================
-# PROCESS PDF
-# =========================================================
-if (
-    files
-    and
-    st.session_state.vector_store is None
-):
+    st.write(
+        f"PDF Loaded: {'✅' if st.session_state.vector_store else '❌'}"
+    )
+
+    st.write(
+        f"ML Trained: {'✅' if st.session_state.ml_trained else '❌'}"
+    )
+
+# =======================
+# PDF PROCESSING
+# =======================
+if files and st.session_state.vector_store is None:
 
     documents = []
 
@@ -434,9 +262,7 @@ if (
 
         pdf = PdfReader(file)
 
-        for i, page in enumerate(
-            pdf.pages
-        ):
+        for i, page in enumerate(pdf.pages):
 
             text = page.extract_text()
 
@@ -445,21 +271,15 @@ if (
                 documents.append({
 
                     "text": text,
-
                     "page": i + 1
                 })
 
-    splitter = (
-        RecursiveCharacterTextSplitter(
-
-            chunk_size=chunk_size,
-
-            chunk_overlap=chunk_overlap
-        )
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=100
     )
 
     chunks = []
-
     metadatas = []
 
     for doc in documents:
@@ -474,66 +294,394 @@ if (
 
             metadatas.append({
 
-                "page":
-                doc["page"]
+                "page": doc["page"]
             })
 
-    embeddings = (
-        HuggingFaceEmbeddings(
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
 
-            model_name=
-            "sentence-transformers/all-MiniLM-L6-v2"
+    st.session_state.vector_store = FAISS.from_texts(
+        chunks,
+        embeddings,
+        metadatas=metadatas
+    )
+
+    st.success("✅ PDFs Processed Successfully")
+
+    st.info(
+        f"📄 Documents Loaded: {len(documents)}"
+    )
+
+    st.info(
+        f"🧩 Chunks Created: {len(chunks)}"
+    )
+
+# =======================
+# DATASET ANALYSIS
+# =======================
+if study_mode == "Dataset Analysis":
+
+    st.header("📊 Dataset Analysis")
+
+    try:
+
+        df = pd.read_csv(
+            "data/student_habits_performance.csv"
         )
-    )
 
-    st.session_state.vector_store = (
-        FAISS.from_texts(
+        st.dataframe(df.head())
 
-            chunks,
+        st.subheader("Missing Values")
 
-            embeddings,
+        st.write(df.isnull().sum())
 
-            metadatas=metadatas
+        st.subheader("Statistics")
+
+        st.write(df.describe())
+
+        numeric_cols = df.select_dtypes(
+            include=np.number
+        ).columns
+
+        col = st.selectbox(
+            "Select Column",
+            numeric_cols
         )
-    )
 
-    st.success(
-        "✅ PDFs Processed Successfully"
-    )
+        fig, ax = plt.subplots()
 
-# =========================================================
-# QUICK ACTIONS
-# =========================================================
-st.subheader(
-    "⚡ Quick Actions"
-)
+        df[col].hist(ax=ax)
 
-c1, c2, c3 = st.columns(3)
+        ax.set_title(col)
 
-if c1.button("Summarize"):
+        st.pyplot(fig)
 
-    study_mode = "Summarize"
+    except Exception as e:
 
-if c2.button("Generate MCQ"):
+        st.error(f"Error: {e}")
 
-    study_mode = "MCQ Test"
+# =======================
+# ML PREDICTION
+# =======================
+elif study_mode == "ML Prediction":
 
-if c3.button("Explain Simple"):
+    st.header("🤖 ML Prediction System")
 
-    study_mode = "Explain Simple"
+    try:
 
-# =========================================================
+        df = pd.read_csv(
+            "data/student_habits_performance.csv"
+        )
+
+        df = df.drop(columns=["student_id"])
+
+        categorical_cols = df.select_dtypes(
+            include="object"
+        ).columns
+
+        for col in categorical_cols:
+
+            df[col] = df[col].astype("category").cat.codes
+
+        df["performance"] = (
+            df["exam_score"] >= 60
+        ).astype(int)
+
+        X = df.drop(
+            columns=["exam_score", "performance"]
+        )
+
+        y = df["performance"]
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y,
+            test_size=0.2,
+            random_state=42
+        )
+
+        if st.button("Train Models"):
+
+            rf_model = RandomForestClassifier()
+            rf_model.fit(X_train, y_train)
+
+            rf_preds = rf_model.predict(X_test)
+
+            rf_acc = accuracy_score(
+                y_test,
+                rf_preds
+            )
+
+            lr_model = LogisticRegression(
+                max_iter=1000
+            )
+
+            lr_model.fit(X_train, y_train)
+
+            lr_preds = lr_model.predict(X_test)
+
+            lr_acc = accuracy_score(
+                y_test,
+                lr_preds
+            )
+
+            if rf_acc >= lr_acc:
+
+                best_model = rf_model
+                best_name = "Random Forest"
+                best_acc = rf_acc
+
+            else:
+
+                best_model = lr_model
+                best_name = "Logistic Regression"
+                best_acc = lr_acc
+
+            os.makedirs("models", exist_ok=True)
+
+            pickle.dump(
+                best_model,
+                open("models/best_model.pkl", "wb")
+            )
+
+            st.session_state.ml_trained = True
+
+            st.success(
+                "Models trained successfully."
+            )
+
+            st.subheader("📊 Model Comparison")
+
+            st.write(
+                f"Random Forest Accuracy: {rf_acc:.2f}"
+            )
+
+            st.write(
+                f"Logistic Regression Accuracy: {lr_acc:.2f}"
+            )
+
+            st.success(
+                f"Best Model: {best_name}"
+            )
+
+        if os.path.exists("models/best_model.pkl"):
+
+            model = pickle.load(
+                open("models/best_model.pkl", "rb")
+            )
+
+            st.subheader("🎯 Student Prediction")
+
+            user_input = {}
+
+            for col in X.columns:
+
+                if str(df[col].dtype) in ["int64", "float64"]:
+
+                    user_input[col] = st.number_input(
+                        col,
+                        value=1.0
+                    )
+
+                else:
+
+                    user_input[col] = st.number_input(
+                        col,
+                        value=1.0
+                    )
+
+            if st.button("Predict Performance"):
+
+                input_df = pd.DataFrame(
+                    [user_input]
+                )
+
+                prediction = model.predict(input_df)[0]
+
+                probability = max(
+                    model.predict_proba(input_df)[0]
+                )
+
+                label = (
+                    "Good Performance"
+                    if prediction == 1
+                    else "Needs Improvement"
+                )
+
+                confidence = probability * 100
+
+                st.success(
+
+                    f"""
+Prediction:
+{label}
+
+Confidence:
+{confidence:.2f}%
+"""
+                )
+
+                st.progress(
+                    int(confidence)
+                )
+
+    except Exception as e:
+
+        st.error(f"ML Error: {e}")
+# =======================
+# SUBJECTIVE EVALUATION
+# =======================
+elif study_mode == "Subjective Evaluation":
+
+    st.header("📝 Subjective Evaluation")
+
+    if st.button("Generate Descriptive Question"):
+
+        if not st.session_state.vector_store:
+
+            st.warning("Upload PDFs first")
+
+        else:
+
+            docs = st.session_state.vector_store.similarity_search(
+                "important concepts",
+                k=max(k, 5)
+            )
+
+            context = "\n\n".join(
+                [d.page_content for d in docs]
+            )
+
+            response = client.chat.completions.create(
+
+                model="llama-3.1-8b-instant",
+
+                messages=[{
+
+                    "role": "user",
+
+                    "content":
+
+                    f"""
+Generate ONE university-level descriptive question.
+
+Keep:
+- concise
+- educational
+- exam-oriented
+
+Context:
+{context}
+"""
+                }]
+            )
+
+            question = response.choices[0].message.content
+
+            st.session_state.subjective_question = question
+
+    if st.session_state.subjective_question:
+
+        st.subheader("Generated Question")
+
+        st.write(
+            st.session_state.subjective_question
+        )
+
+        student_answer = st.text_area(
+            "Write Your Answer"
+        )
+
+        if st.button("Evaluate Answer"):
+
+            response = client.chat.completions.create(
+
+                model="llama-3.1-8b-instant",
+
+                messages=[{
+
+                    "role": "user",
+
+                    "content":
+
+                    f"""
+Evaluate this student answer.
+
+Question:
+{st.session_state.subjective_question}
+
+Student Answer:
+{student_answer}
+
+Return:
+- Score out of 10
+- Feedback
+"""
+                }]
+            )
+
+            evaluation = (
+                response.choices[0]
+                .message.content
+            )
+
+            st.markdown(evaluation)
+
+            report_data = {
+
+                "username":
+                st.session_state.user_id,
+
+                "module":
+                "Subjective Evaluation",
+
+                "question":
+                st.session_state.subjective_question,
+
+                "answer":
+                student_answer,
+
+                "evaluation":
+                evaluation,
+
+                "timestamp":
+                str(datetime.now())
+            }
+
+            save_report(report_data)
+
+            report_text = f"""
+
+IntelliLearn-AI Evaluation Report
+
+Student:
+{st.session_state.user_id}
+
+Question:
+{st.session_state.subjective_question}
+
+Answer:
+{student_answer}
+
+Evaluation:
+{evaluation}
+"""
+
+            st.download_button(
+
+                "📥 Download Report",
+
+                report_text,
+
+                file_name="evaluation_report.txt"
+            )
+# =======================
 # GENERAL CHATBOT
-# =========================================================
-if study_mode == "General Chatbot":
+# =======================
+elif study_mode == "General Chatbot":
 
-    st.header(
-        "💬 General AI Chatbot"
-    )
-
-    query = st.chat_input(
-        "Ask anything..."
-    )
+    query = st.chat_input("Ask anything...")
 
     if query:
 
@@ -541,45 +689,27 @@ if study_mode == "General Chatbot":
             ("user", query)
         )
 
-        with st.spinner(
-            "Thinking..."
-        ):
+        response = client.chat.completions.create(
 
-            response = (
-                client.chat.completions.create(
+            model="llama-3.1-8b-instant",
 
-                    model=
-                    "llama-3.1-8b-instant",
+            temperature=temperature,
 
-                    temperature=
-                    temperature,
+            messages=[
 
-                    messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful AI assistant."
+                },
 
-                        {
-
-                            "role": "system",
-
-                            "content":
-                            "You are a helpful AI assistant."
-                        },
-
-                        {
-
-                            "role": "user",
-
-                            "content":
-                            query
-                        }
-                    ]
-                )
-            )
-
-        answer = (
-            response
-            .choices[0]
-            .message.content
+                {
+                    "role": "user",
+                    "content": query
+                }
+            ]
         )
+
+        answer = response.choices[0].message.content
 
         st.session_state.chat_history.append(
             ("bot", answer)
@@ -587,32 +717,20 @@ if study_mode == "General Chatbot":
 
         st.markdown(answer)
 
-# =========================================================
-# RAG SYSTEM
-# =========================================================
-elif study_mode in [
-
-    "Ask Question",
-
-    "Summarize",
-
-    "Important Points",
-
-    "Notes",
-
-    "Explain Simple"
-]:
-
-    st.header(
-        f"📘 {study_mode}"
-    )
+# =======================
+# MAIN RAG SYSTEM
+# =======================
+else:
 
     query = None
 
+    # =======================
+    # INPUT
+    # =======================
     if study_mode == "Ask Question":
 
         query = st.chat_input(
-            "Ask question from PDFs..."
+            "Ask anything..."
         )
 
     else:
@@ -621,48 +739,59 @@ elif study_mode in [
 
             query = "RUN"
 
-    if query and st.session_state.vector_store:
+    # =======================
+    # RAG EXECUTION
+    # =======================
+    if (
+        query or
+        study_mode != "Ask Question"
+    ) and st.session_state.vector_store:
 
-        if detect_unfair_query(query):
+        # =======================
+        # SAFETY CHECK
+        # =======================
+        if study_mode == "Ask Question":
 
-            st.warning(
-                savage_reply()
+            if detect_unfair_query(query):
+
+                answer = savage_reply()
+
+                st.markdown(answer)
+
+                st.stop()
+
+            st.session_state.chat_history.append(
+                ("user", query)
             )
 
-            st.stop()
+        # =======================
+        # RETRIEVAL
+        # =======================
+        docs = st.session_state.vector_store.similarity_search(
 
-        docs = (
-            st.session_state.vector_store
-            .similarity_search(
+            query if query else "summary",
 
-                query
-                if study_mode == "Ask Question"
-                else "summary",
-
-                k=top_k
-            )
+            k=max(k, 5)
         )
 
-        context = "\n\n".join([
+        context = "\n\n".join(
+            [d.page_content for d in docs]
+        )
 
-            d.page_content
-            for d in docs
-        ])
-
-        previous = (
+        extra_context = (
 
             st.session_state.last_output
-            if use_memory
-            else ""
+
+            if use_memory else ""
         )
 
-        # =================================================
+        # =======================
         # PROMPTS
-        # =================================================
+        # =======================
         if study_mode == "Summarize":
 
             prompt = f"""
-Give structured summary.
+Summarize clearly.
 
 {context}
 """
@@ -670,7 +799,7 @@ Give structured summary.
         elif study_mode == "Important Points":
 
             prompt = f"""
-Extract exam important points.
+Extract important exam points.
 
 {context}
 """
@@ -678,8 +807,38 @@ Extract exam important points.
         elif study_mode == "Notes":
 
             prompt = f"""
-Create bullet-point notes.
+Generate structured notes.
 
+{context}
+"""
+
+        # =======================
+        # MCQ TEST
+        # =======================
+        elif study_mode == "MCQ Test":
+
+            prompt = f"""
+Generate EXACTLY 5 MCQs from the context.
+
+Return STRICT JSON ONLY.
+
+Format:
+
+[
+  {{
+    "question": "Question",
+    "options": {{
+      "A": "Option A",
+      "B": "Option B",
+      "C": "Option C",
+      "D": "Option D"
+    }},
+    "answer": "A",
+    "explanation": "Short explanation"
+  }}
+]
+
+Context:
 {context}
 """
 
@@ -695,7 +854,7 @@ Explain simply for beginners.
 
             prompt = f"""
 Previous Context:
-{previous}
+{extra_context}
 
 Document Context:
 {context}
@@ -704,30 +863,23 @@ Question:
 {query}
 """
 
-        with st.spinner(
-            "Generating..."
-        ):
+        # =======================
+        # LLM CALL
+        # =======================
+        with st.spinner("Thinking..."):
 
-            response = (
-                client.chat.completions.create(
+            response = client.chat.completions.create(
 
-                    model=
-                    "llama-3.1-8b-instant",
+                model="llama-3.1-8b-instant",
 
-                    temperature=
-                    temperature,
+                temperature=temperature,
 
-                    messages=[
+                messages=[{
 
-                        {
+                    "role": "user",
 
-                            "role": "user",
-
-                            "content":
-                            prompt
-                        }
-                    ]
-                )
+                    "content": prompt
+                }]
             )
 
         answer = (
@@ -736,874 +888,320 @@ Question:
             .message.content
         )
 
-        st.session_state.last_output = answer
-
-        st.session_state.chat_history.append(
-            ("bot", answer)
-        )
-
-        st.markdown(answer)
-
-        st.download_button(
-
-            "📥 Download Output",
-
-            answer,
-
-            file_name="output.txt"
-        )
-
-        with st.expander(
-            "📄 Sources"
-        ):
-
-            for d in docs[:3]:
-
-                st.write(
-                    f"📍 Page {d.metadata.get('page')}"
-                )
-
-                st.write(
-                    d.page_content[:300]
-                )
-
-# =========================================================
-# MCQ TEST
-# =========================================================
-elif study_mode == "MCQ Test":
-
-    st.header(
-        "📝 AI MCQ Test"
-    )
-
-    if st.button(
-        "Generate MCQs"
-    ):
-
-        if not st.session_state.vector_store:
-
-            st.warning(
-                "Upload PDFs first."
-            )
-
-        else:
-
-            docs = (
-                st.session_state.vector_store
-                .similarity_search(
-
-                    "important concepts",
-
-                    k=top_k
-                )
-            )
-
-            context = "\n\n".join([
-
-                d.page_content
-                for d in docs
-            ])
-
-            prompt = f"""
-Generate EXACTLY 5 MCQs.
-
-Return valid JSON only.
-
-Context:
-{context}
-"""
-
-            response = (
-                client.chat.completions.create(
-
-                    model=
-                    "llama-3.1-8b-instant",
-
-                    temperature=0.3,
-
-                    messages=[
-
-                        {
-
-                            "role": "user",
-
-                            "content":
-                            prompt
-                        }
-                    ]
-                )
-            )
-
-            raw = (
-                response
-                .choices[0]
-                .message.content
-            )
+        # =======================
+        # MCQ EVALUATION SYSTEM
+        # =======================
+        if study_mode == "MCQ Test":
 
             try:
 
                 json_match = re.search(
-                    r'\[.*\]',
-                    raw,
+
+                    r'\[\s*{.*}\s*\]',
+
+                    answer,
+
                     re.DOTALL
                 )
 
-                if json_match:
+                json_text = (
+                    json_match.group()
+                )
 
-                    parsed = json.loads(
-                        json_match.group()
+                mcqs = json.loads(
+                    json_text
+                )
+
+                st.session_state.mcqs = mcqs
+
+                score = 0
+
+                st.subheader(
+                    "📝 MCQ Evaluation Test"
+                )
+
+                user_answers = {}
+
+                for i, mcq in enumerate(mcqs):
+
+                    st.markdown(
+
+                        f"""
+### Q{i+1}. {mcq['question']}
+"""
                     )
 
-                    st.session_state.mcq_json = parsed
+                    options = mcq["options"]
+
+                    selected = st.radio(
+
+                        "Choose Answer",
+
+                        list(options.keys()),
+
+                        format_func=lambda x:
+                        f"{x}. {options[x]}",
+
+                        key=f"mcq_{i}"
+                    )
+
+                    user_answers[i] = selected
+
+                # =======================
+                # SUBMIT TEST
+                # =======================
+                if st.button("Submit MCQ Test"):
+
+                    st.subheader(
+                        "📊 Evaluation Result"
+                    )
+
+                    feedback_text = ""
+
+                    for i, mcq in enumerate(mcqs):
+
+                        correct = mcq["answer"]
+
+                        explanation = (
+                            mcq["explanation"]
+                        )
+
+                        selected = (
+                            user_answers[i]
+                        )
+
+                        # ===================
+                        # CORRECT
+                        # ===================
+                        if selected == correct:
+
+                            score += 1
+
+                            st.success(
+                                f"Q{i+1}: Correct ✅"
+                            )
+
+                        # ===================
+                        # WRONG
+                        # ===================
+                        else:
+
+                            st.error(
+
+                                f"""
+Q{i+1}: Wrong ❌
+
+Correct Answer:
+{correct}
+
+Explanation:
+{explanation}
+"""
+                            )
+
+                        feedback_text += f"""
+
+Q{i+1}
+
+Selected:
+{selected}
+
+Correct:
+{correct}
+
+Explanation:
+{explanation}
+
+"""
+
+                    # =======================
+                    # FINAL SCORE
+                    # =======================
+                    total = len(mcqs)
+
+                    percentage = (
+                        score / total
+                    ) * 100
 
                     st.success(
-                        "MCQs generated."
+
+                        f"""
+Final Score:
+{score}/{total}
+
+Percentage:
+{percentage:.2f}%
+"""
                     )
 
-                else:
-
-                    st.error(
-                        "JSON parsing failed."
+                    st.progress(
+                        int(percentage)
                     )
 
-            except Exception:
+                    # =======================
+                    # ANALYTICS
+                    # =======================
+                    st.session_state.last_score = score
+
+                    st.session_state.attempts += 1
+
+                    if (
+                        score >
+                        st.session_state.best_score
+                    ):
+
+                        st.session_state.best_score = score
+
+                    # =======================
+                    # DATABASE SAVE
+                    # =======================
+                    report_data = {
+
+                        "username":
+                        st.session_state.user_id,
+
+                        "module":
+                        "MCQ Evaluation",
+
+                        "score":
+                        score,
+
+                        "total":
+                        total,
+
+                        "percentage":
+                        percentage,
+
+                        "timestamp":
+                        str(datetime.now())
+                    }
+
+                    save_report(report_data)
+
+                    # =======================
+                    # DOWNLOAD REPORT
+                    # =======================
+                    report_text = f"""
+
+IntelliLearn-AI MCQ Report
+
+Student:
+{st.session_state.user_id}
+
+Score:
+{score}/{total}
+
+Percentage:
+{percentage:.2f}%
+
+Detailed Feedback:
+{feedback_text}
+
+Generated On:
+{datetime.now()}
+"""
+
+                    st.download_button(
+
+                        "📥 Download MCQ Report",
+
+                        report_text,
+
+                        file_name="mcq_report.txt"
+                    )
+
+            except Exception as e:
 
                 st.error(
                     "MCQ generation failed."
                 )
 
-    # =====================================================
-    # DISPLAY MCQS
-    # =====================================================
-    if st.session_state.mcq_json:
+                st.code(str(e))
 
-        score = 0
-
-        for i, q in enumerate(
-
-            st.session_state.mcq_json
-        ):
-
-            st.subheader(
-                f"Q{i+1}"
-            )
-
-            st.write(
-                q["question"]
-            )
-
-            answer = st.radio(
-
-                "Choose",
-
-                ["A", "B", "C", "D"],
-
-                key=f"mcq_{i}"
-            )
-
-        if st.button(
-            "Submit MCQ"
-        ):
-
-            score = 0
-
-            total = len(
-                st.session_state.mcq_json
-            )
-
-            for i, q in enumerate(
-                st.session_state.mcq_json
-            ):
-
-                if (
-                    st.session_state.get(
-                        f"mcq_{i}"
-                    )
-                    ==
-                    q["answer"]
-                ):
-
-                    score += 1
-
-            user = st.session_state.user_id
-
-            if user not in st.session_state.user_stats:
-
-                st.session_state.user_stats[user] = {
-
-                    "attempts": 0,
-
-                    "best_score": 0,
-
-                    "last_score": 0
-                }
-
-            stats = (
-                st.session_state.user_stats[user]
-            )
-
-            stats["attempts"] += 1
-
-            stats["last_score"] = score
-
-            if score > stats["best_score"]:
-
-                stats["best_score"] = score
-
-            st.success(
-                f"Score: {score}/{total}"
-            )
-
-# =========================================================
-# SUBJECTIVE EVALUATION
-# =========================================================
-elif study_mode == "Subjective Evaluation":
-
-    st.header(
-        "📄 Subjective Evaluation"
-    )
-
-    if st.button(
-        "Generate Question"
-    ):
-
-        if not st.session_state.vector_store:
-
-            st.warning(
-                "Upload PDFs first."
-            )
-
+        # =======================
+        # NORMAL OUTPUT
+        # =======================
         else:
 
-            docs = (
-                st.session_state.vector_store
-                .similarity_search(
+            st.session_state.last_output = answer
 
-                    "important concepts",
-
-                    k=top_k
-                )
+            st.session_state.chat_history.append(
+                ("bot", answer)
             )
 
-            context = "\n\n".join([
+            st.markdown(answer)
 
-                d.page_content
-                for d in docs
-            ])
-
-            prompt = f"""
-Generate ONE descriptive exam question.
-
-Context:
-{context}
-"""
-
-            response = (
-                client.chat.completions.create(
-
-                    model=
-                    "llama-3.1-8b-instant",
-
-                    messages=[
-
-                        {
-
-                            "role": "user",
-
-                            "content":
-                            prompt
-                        }
-                    ]
-                )
+            st.download_button(
+                "Download Answer",
+                answer
             )
 
-            st.session_state.subjective_question = (
-
-                response
-                .choices[0]
-                .message.content
-            )
-
-    if st.session_state.subjective_question:
-
-        st.subheader(
-            "Generated Question"
-        )
-
-        st.write(
-            st.session_state.subjective_question
-        )
-
-        student_answer = st.text_area(
-            "Write your answer"
-        )
-
-        if st.button(
-            "Evaluate"
-        ):
-
-            prompt = f"""
-Evaluate this answer.
-
-Question:
-{st.session_state.subjective_question}
-
-Answer:
-{student_answer}
-
-Return:
-- Score out of 10
-- Feedback
-"""
-
-            response = (
-                client.chat.completions.create(
-
-                    model=
-                    "llama-3.1-8b-instant",
-
-                    messages=[
-
-                        {
-
-                            "role": "user",
-
-                            "content":
-                            prompt
-                        }
-                    ]
-                )
-            )
-
-            evaluation = (
-
-                response
-                .choices[0]
-                .message.content
-            )
-
-            st.markdown(
-                evaluation
-            )
-
-# =========================================================
-# DATASET ANALYSIS
-# =========================================================
-elif study_mode == "Dataset Analysis":
-
-    st.header(
-        "📊 Dataset Analysis"
-    )
-
-    try:
-
-        df = pd.read_csv(
-            "data/student_performance.csv"
-        )
-
-        st.dataframe(df.head())
-
-        st.subheader(
-            "Dataset Shape"
-        )
-
-        st.write(df.shape)
-
-        st.subheader(
-            "Missing Values"
-        )
-
-        st.write(
-            df.isnull().sum()
-        )
-
-        st.subheader(
-            "Statistics"
-        )
-
-        st.write(
-            df.describe()
-        )
-
-        numeric_cols = (
-            df.select_dtypes(
-                include=np.number
-            ).columns
-        )
-
-        selected_col = st.selectbox(
-
-            "Select Column",
-
-            numeric_cols
-        )
-
-        fig, ax = plt.subplots()
-
-        df[selected_col].hist(ax=ax)
-
-        ax.set_title(
-            selected_col
-        )
-
-        st.pyplot(fig)
-
-        st.subheader(
-            "Correlation Matrix"
-        )
-
-        st.write(
-            df.corr(numeric_only=True)
-        )
-
-    except Exception as e:
-
-        st.error(str(e))
-
-# =========================================================
-# ML PREDICTION
-# =========================================================
-elif study_mode == "ML Prediction":
-
-    st.header(
-        "🤖 ML Prediction System"
-    )
-
-    try:
-
-        df = pd.read_csv(
-            "data/student_performance.csv"
-        )
-
-        # =================================================
-        # CREATE LABELS
-        # =================================================
-        def classify(score):
-
-            if score >= 80:
-
-                return "Excellent"
-
-            elif score >= 60:
-
-                return "Average"
-
-            return "Poor"
-
-        df["performance"] = (
-            df["exam_score"]
-            .apply(classify)
-        )
-
-        # =================================================
-        # DROP ID
-        # =================================================
-        df = df.drop(
-            columns=["student_id"]
-        )
-
-        X = df.drop(
-            columns=[
-                "exam_score",
-                "performance"
-            ]
-        )
-
-        y = df["performance"]
-
-        categorical_cols = (
-            X.select_dtypes(
-                include=["object"]
-            ).columns
-        )
-
-        numeric_cols = (
-            X.select_dtypes(
-                exclude=["object"]
-            ).columns
-        )
-
-        numeric_transformer = Pipeline([
-
-            (
-
-                "imputer",
-
-                SimpleImputer(
-                    strategy="median"
-                )
-            ),
-
-            (
-
-                "scaler",
-
-                StandardScaler()
-            )
-        ])
-
-        categorical_transformer = Pipeline([
-
-            (
-
-                "imputer",
-
-                SimpleImputer(
-                    strategy="most_frequent"
-                )
-            ),
-
-            (
-
-                "encoder",
-
-                OneHotEncoder(
-                    handle_unknown="ignore"
-                )
-            )
-        ])
-
-        preprocessor = (
-            ColumnTransformer([
-
-                (
-
-                    "num",
-
-                    numeric_transformer,
-
-                    numeric_cols
-                ),
-
-                (
-
-                    "cat",
-
-                    categorical_transformer,
-
-                    categorical_cols
-                )
-            ])
-        )
-
-        X_train, X_test, y_train, y_test = (
-            train_test_split(
-
-                X,
-                y,
-
-                test_size=0.2,
-
-                random_state=42
-            )
-        )
-
-        # =================================================
-        # TRAIN MODELS
-        # =================================================
-        if st.button(
-            "Train Models"
-        ):
-
-            models = {
-
-                "Logistic Regression":
-
-                LogisticRegression(
-                    max_iter=1000
-                ),
-
-                "Random Forest":
-
-                RandomForestClassifier(
-                    n_estimators=100,
-                    random_state=42
-                )
-            }
-
-            results = {}
-
-            best_model = None
-            best_acc = 0
-
-            for name, model in models.items():
-
-                pipeline = Pipeline([
-
-                    (
-
-                        "preprocessor",
-
-                        preprocessor
-                    ),
-
-                    (
-
-                        "model",
-
-                        model
-                    )
-                ])
-
-                pipeline.fit(
-                    X_train,
-                    y_train
+        # =======================
+        # SOURCE DISPLAY
+        # =======================
+        with st.expander("📄 Sources"):
+
+            for d in docs[:3]:
+
+                st.write(
+                    f"📍 Page {d.metadata['page']}"
                 )
 
-                preds = pipeline.predict(
-                    X_test
+                st.write(
+                    d.page_content[:300]
                 )
-
-                acc = accuracy_score(
-                    y_test,
-                    preds
-                )
-
-                results[name] = {
-
-                    "accuracy": acc,
-
-                    "precision":
-                    precision_score(
-                        y_test,
-                        preds,
-                        average="weighted"
-                    ),
-
-                    "recall":
-                    recall_score(
-                        y_test,
-                        preds,
-                        average="weighted"
-                    ),
-
-                    "f1":
-                    f1_score(
-                        y_test,
-                        preds,
-                        average="weighted"
-                    )
-                }
-
-                if acc > best_acc:
-
-                    best_acc = acc
-
-                    best_model = pipeline
-
-            st.session_state.model_results = results
-
-            st.session_state.best_model = best_model
-
-            st.session_state.ml_trained = True
-
-            os.makedirs(
-                "models",
-                exist_ok=True
-            )
-
-            with open(
-                "models/best_model.pkl",
-                "wb"
-            ) as f:
-
-                pickle.dump(
-                    best_model,
-                    f
-                )
-
-            st.success(
-                "Models trained successfully."
-            )
-
-        # =================================================
-        # SHOW RESULTS
-        # =================================================
-        if st.session_state.model_results:
-
-            st.subheader(
-                "📊 Model Comparison"
-            )
-
-            st.write(
-                pd.DataFrame(
-                    st.session_state.model_results
-                ).T
-            )
-
-        # =================================================
-        # USER PREDICTION
-        # =================================================
-        if st.session_state.ml_trained:
-
-            st.subheader(
-                "🎯 Student Prediction"
-            )
-
-            user_input = {}
-
-            for col in X.columns:
-
-                if col in numeric_cols:
-
-                    user_input[col] = (
-                        st.number_input(
-                            col,
-                            value=1.0
-                        )
-                    )
-
-                else:
-
-                    user_input[col] = (
-                        st.text_input(col)
-                    )
-
-            if st.button(
-                "Predict Performance"
-            ):
-
-                input_df = pd.DataFrame(
-                    [user_input]
-                )
-
-                prediction = (
-                    st.session_state.best_model
-                    .predict(input_df)[0]
-                )
-
-                probabilities = (
-                    st.session_state.best_model
-                    .predict_proba(input_df)[0]
-                )
-
-                confidence = (
-                    np.max(probabilities)
-                    * 100
-                )
-
-                st.success(
-                    f"""
-Prediction:
-{prediction}
-
-Confidence:
-{confidence:.2f}%
-"""
-                )
-
-    except Exception as e:
-
-        st.error(str(e))
-
-# =========================================================
+                
+# =======================
 # ANALYTICS DASHBOARD
-# =========================================================
-elif study_mode == "Analytics Dashboard":
+# =======================
+if study_mode == "Analytics Dashboard":
 
-    st.header(
-        "📈 Analytics Dashboard"
-    )
+    st.header("📊 Analytics Dashboard")
 
-    stats = (
-        st.session_state.user_stats.get(
-
-            st.session_state.user_id,
-
-            {
-
-                "attempts": 0,
-
-                "best_score": 0,
-
-                "last_score": 0
-            }
-        )
-    )
-
-    c1, c2, c3 = st.columns(3)
-
-    c1.metric(
+    st.metric(
         "Attempts",
-        stats["attempts"]
+        st.session_state.attempts
     )
 
-    c2.metric(
-        "Best Score",
-        stats["best_score"]
-    )
-
-    c3.metric(
+    st.metric(
         "Last Score",
-        stats["last_score"]
+        st.session_state.last_score
     )
 
-# =========================================================
-# TIME SERIES DEMO
-# =========================================================
-elif study_mode == "Time Series Demo":
-
-    st.header(
-        "📈 Time Series Demo"
+    st.metric(
+        "Best Score",
+        st.session_state.best_score
     )
 
-    try:
+    if collection is not None:
 
-        df = pd.read_csv(
-            "data/student_performance.csv"
-        )
+        try:
 
-        series = (
-            df["exam_score"]
-            .rolling(window=5)
-            .mean()
-        )
+            total_reports = (
+                collection.count_documents({})
+            )
 
-        fig, ax = plt.subplots()
+            st.metric(
+                "Database Reports",
+                total_reports
+            )
 
-        ax.plot(series)
+        except Exception:
+            pass
 
-        ax.set_title(
-            "Moving Average of Exam Scores"
-        )
-
-        st.pyplot(fig)
-
-    except Exception as e:
-
-        st.error(str(e))
-
-# =========================================================
+# =======================
 # CHAT HISTORY
-# =========================================================
+# =======================
 st.markdown("---")
 
-st.subheader(
-    "🕘 Chat History"
-)
+st.subheader("🕘 Chat History")
 
 for role, msg in st.session_state.chat_history:
 
     if role == "user":
 
-        st.markdown(
-            f"🧑 {msg}"
-        )
+        st.markdown(f"🧑 {msg}")
 
     else:
 
-        st.markdown(
-            f"🤖 {msg}"
-        )
-
-# =========================================================
-# FOOTER
-# =========================================================
-st.markdown("---")
-
-st.caption(
-    """
-🚀 IntelliLearn-AI
-| RAG + ML + Evaluation Platform
-"""
-)
+        st.markdown(f"🤖 {msg}")
