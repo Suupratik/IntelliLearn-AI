@@ -1483,8 +1483,8 @@ Keep practicing consistently to improve learning analytics.
 
     else:
 
-        st.warning(
-            "MongoDB not connected."
+        st.info(
+             "Running in local session mode."
         )
   
 # =======================
